@@ -3,6 +3,7 @@ import java.io.*;
 import org.apache.xmlrpc.*;
 import java.nio.file.*;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class FileHandler {
     private XmlRpcClient client;
@@ -86,13 +87,13 @@ public class FileHandler {
                     Vector fileObj = new Vector<>();
 
                     fileObj.add((int)clientMap.get(name).get(0) + 1);
-                    hashlist = new Vector<>();
+                    hashlist.clear();
                     hashlist.add("0");
                     fileObj.add(hashlist);
                     clientMap.put(name, fileObj);
                 }
             }
-            else if (!(getHashList(f.getAbsolutePath()+"/"+name).equals((Vector) clientMap.get(name).get(1)))) {
+            else if (!(getHashList(f.getAbsolutePath()+"/"+name).equals((Vector<String>)clientMap.get(name).get(1)))) {
                     Vector hashlist = getHashList(f.getAbsolutePath()+"/"+name);
                     Vector fileObj = new Vector<>();
                     fileObj.add((int)clientMap.get(name).get(0) + 1);
@@ -123,6 +124,7 @@ public class FileHandler {
             while((readSize = in.read(bSize)) != -1) {
                 totalSize += readSize;
                 byte[] read = new byte[readSize];
+                System.arraycopy(bSize, 0, read, 0, readSize);
                 String hashval = getHashVal(read);
                 hashlist.add(hashval);
             }
@@ -140,21 +142,22 @@ public class FileHandler {
     }
 
     private String getHashVal(byte[] blockData) {
-		String hashVal = "";
+		MessageDigest digest = null;
 		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] hash = digest.digest(blockData);
-			StringBuffer hexString = new StringBuffer();
+			digest = MessageDigest.getInstance("SHA-256");
+			/*StringBuffer hexString = new StringBuffer();
 			for (int i = 0; i < hash.length; i++) {
 				String hex = Integer.toHexString(0xff & hash[i]);
 				if(hex.length() == 1) hexString.append('0');
 				hexString.append(hex);
 			}
-			hashVal = hexString.toString();
-		} catch(Exception ex) {
-			throw new RuntimeException(ex);
+			hashVal = new String(hexString);*/
+		} catch(NoSuchAlgorithmException e) {
+			e.printStackTrace();
 		}
-		return hashVal;
+		byte[] hash = digest.digest(blockData);
+
+		return Base64.getEncoder().encodeToString(hash);
 	}
 
     private void updateFileMap(File dir) {
@@ -184,9 +187,11 @@ public class FileHandler {
                         params = new Vector<>();
                         serverMap = (Hashtable<String, Vector>) client.execute("surfstore.getfileinfomap", params);
                         serverMapSet = serverMap.keySet();
-                        System.err.println("Debug downloadfile!2");
+                        System.err.println("Debug downloadfile!2" + serverMapSet);
+                        System.err.println("hashlist1: "+ serverMap.get(filename));
                         downloadFromServer(filename, dir);
                         clientMap.put(filename, serverMap.get(filename));
+                        System.err.println("hashlist2: "+ serverMap.get(filename));
                     }
                 }
                 /*else if (Integer.parseInt((String)clientMap.get(filename).get(0)) == Integer.parseInt((String)serverMap.get(filename).get(0))) {
@@ -210,8 +215,10 @@ public class FileHandler {
             downloadNewFile.removeAll(clientMapSet);
             System.err.println("Debug downloadfile!5");
             for (String filename : downloadNewFile) {
+                System.err.println("Debug downloadfile!2" + filename);
                 downloadFromServer(filename, dir);
                 clientMap.put(filename, serverMap.get(filename));
+                System.err.println("hashlist: "+ serverMap.get(filename));
             }
             System.err.println("Debug downloadfile!6");
         } catch (Exception e) {
@@ -230,7 +237,7 @@ public class FileHandler {
                     sb.append(hashval + " ");
                 }
                 sb.setCharAt(sb.length() - 1, '\n');
-                myWriter.write(sb.toString());
+                myWriter.write(new String(sb));
             }
             myWriter.close();
 
@@ -242,9 +249,9 @@ public class FileHandler {
     private void downloadFromServer(String filename, File dir) {
         try {
             File file = new File(dir.getAbsolutePath() + "/" + filename);
-            System.err.println("Debug downloadfile!download fcn0");
+            System.err.println("Debug downloadfile!download fcn0" + file);
             Vector<String> hashlist = (Vector<String>) serverMap.get(filename).get(1);
-            System.err.println("Debug downloadfile!download fcn1");
+            System.err.println("Debug downloadfile!download fcn1" + hashlist);
 
             if (((String) hashlist.get(0)).equals("0")) {
                 if (file.exists())
@@ -256,15 +263,22 @@ public class FileHandler {
                 file.createNewFile();
             System.err.println("Debug downloadfile!download fcn2 create");
             Vector params = new Vector<>();
+            FileWriter myWriter = new FileWriter(dir.getAbsolutePath() + "/" + filename);
             FileOutputStream out = new FileOutputStream(file);
             for (String hashval : hashlist) {
                 params.clear();
                 params.add(hashval);
-                System.err.println("Debug downloadfile!download fcninside");
+                System.err.println("Debug downloadfile!download hashKey: " + hashval);
                 byte[] writeIn = (byte[]) client.execute("surfstore.getblock", params);
-                System.err.println("Debug downloadfile!download fcninside" + writeIn);
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                System.err.println("Debug downloadfile!download fcninside" + Base64.getEncoder().encodeToString(digest.digest(writeIn)));
+
+                System.err.println(writeIn);
+                String testing = Base64.getEncoder().encodeToString(digest.digest(writeIn));
                 out.write(writeIn);
+                //myWriter.write(testing);
             }
+            myWriter.close();
             System.err.println("Debug downloadfile!download fcn4 hash");
             out.close();
         } catch (FileNotFoundException e) {
@@ -273,14 +287,14 @@ public class FileHandler {
             e.printStackTrace();
         } catch (XmlRpcException e) {
             System.err.println("Error: Download failed");
+        } catch (NoSuchAlgorithmException e) {
+            System.err.println(e);
         }
     }
 
     private void uploadToSever(String filename, File dir) {
         try {
-            //System.err.println("I did not upload anything0");
             File f = new File(dir.getAbsolutePath() + "/" + filename);
-            //System.err.println("I did not upload anything1");
             byte[] bSize = new byte[this.blockSize];
             FileInputStream in = new FileInputStream(f);
             int readSize = 0;
@@ -293,14 +307,11 @@ public class FileHandler {
                 
                 params = new Vector<>();
                 params.add(read);
-                //System.err.println("I did not upload anything loop");
                 if (!(boolean) client.execute("surfstore.putblock", params)) {
                     System.err.println("Error: upload failed");
                     System.exit(1);
                 }
-                //System.err.println("I did not upload anything if statement out");
             }
-            //System.err.println("I did not upload anything" + totalSize);
             in.close();
 
             if (totalSize == 0) {

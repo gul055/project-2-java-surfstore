@@ -1,6 +1,7 @@
 import org.apache.xmlrpc.*;
 
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class Server { 
@@ -37,28 +38,30 @@ public class Server {
 		if (blockData == null) {
 			return false;
 		}
-
-		blockMap.put(getHashVal(blockData), blockData);
+		String hashVal = getHashVal(blockData);
+		blockMap.put(hashVal, blockData);
+		System.err.println("hashcode: " + hashVal + "block data is: " + blockData);
 
 		return true;
 	}
 
 	private String getHashVal(byte[] blockData) {
-		String hashVal = "";
+		MessageDigest digest = null;
 		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] hash = digest.digest(blockData);
-			StringBuffer hexString = new StringBuffer();
+			digest = MessageDigest.getInstance("SHA-256");
+			/*StringBuffer hexString = new StringBuffer();
 			for (int i = 0; i < hash.length; i++) {
 				String hex = Integer.toHexString(0xff & hash[i]);
 				if(hex.length() == 1) hexString.append('0');
 				hexString.append(hex);
 			}
-			hashVal = hexString.toString();
-		} catch(Exception ex) {
-			throw new RuntimeException(ex);
+			hashVal = new String(hexString);*/
+		} catch(NoSuchAlgorithmException e) {
+			e.printStackTrace();
 		}
-		return hashVal;
+		byte[] hash = digest.digest(blockData);
+
+		return Base64.getEncoder().encodeToString(hash);
 	}
 
 	// Determine which of the provided blocks are on this server
@@ -110,7 +113,6 @@ public class Server {
 			Vector fileObj = fileInfoMap.get(filename);
 			int currVer = (int) fileObj.get(0);
 			if (currVer >= version) {
-				System.err.println("Version out of date");
 				result.add(false);
 				result.add(currVer);
 				return result;
