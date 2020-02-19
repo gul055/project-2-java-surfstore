@@ -43,7 +43,7 @@ public class FileHandler {
         }
     }
 
-    public void loadClientMap(File f) {
+    private void loadClientMap(File f) {
         try {
             if (!f.exists()) {
                 f.createNewFile();
@@ -74,7 +74,7 @@ public class FileHandler {
         }
     }
 
-    public void checkClientMap(File f) {
+    private void checkClientMap(File f) {
         Set<String> localFileSet = new HashSet<>(Arrays.asList(f.list()));
         localFileSet.remove("index.txt");
         Set<String> fileTobeAddSet = new HashSet<>(localFileSet);
@@ -141,7 +141,7 @@ public class FileHandler {
         return hashlist;
     }
 
-    private String getHashVal(byte[] blockData) {
+    public String getHashVal(byte[] blockData) {
 		MessageDigest digest = null;
 		try {
 			digest = MessageDigest.getInstance("SHA-256");
@@ -171,7 +171,7 @@ public class FileHandler {
                  (int) clientMap.get(filename).get(0) > (int) serverMap.get(filename).get(0)) {
                     Vector hashlist = (Vector) clientMap.get(filename).get(1);
                     if (!(((String) hashlist.get(0)).equals("0"))) {
-                        System.err.println("Debug upload!");
+                        //System.err.println("Debug upload!");
                         uploadToSever(filename, dir);
                     }
 
@@ -179,48 +179,39 @@ public class FileHandler {
                     params.add(filename);
                     params.add(clientMap.get(filename).get(0));
                     params.add(clientMap.get(filename).get(1));
-                    System.err.println("Debug uploadfile!");
+                    //System.err.println("Debug uploadfile!");
                     Vector result = (Vector) client.execute("surfstore.updatefile", params);
-                    System.err.println("Debug uploadfile! out");
+                    //System.err.println("Debug uploadfile! out");
                     if (!(boolean)result.get(0)) {
-                        System.err.println("Debug downloadfile!3");
+                        //System.err.println("Debug downloadfile!3");
                         params = new Vector<>();
                         serverMap = (Hashtable<String, Vector>) client.execute("surfstore.getfileinfomap", params);
                         serverMapSet = serverMap.keySet();
-                        System.err.println("Debug downloadfile!2" + serverMapSet);
-                        System.err.println("hashlist1: "+ serverMap.get(filename));
+                        //System.err.println("Debug downloadfile!2" + serverMapSet);
+                        //System.err.println("hashlist1: "+ serverMap.get(filename));
                         downloadFromServer(filename, dir);
                         clientMap.put(filename, serverMap.get(filename));
-                        System.err.println("hashlist2: "+ serverMap.get(filename));
+                        //System.err.println("hashlist2: "+ serverMap.get(filename));
                     }
                 }
-                /*else if (Integer.parseInt((String)clientMap.get(filename).get(0)) == Integer.parseInt((String)serverMap.get(filename).get(0))) {
-                    Vector<String> chashlist = (Vector<String>) clientMap.get(filename).get(1);
-                    Vector<String> shashlist = (Vector<String>) serverMap.get(filename).get(1);
-                    if (chashlist.equals(shashlist)) {
-                        downloadFromServer(filename, dir);
-                        clientMap.put(filename, serverMap.get(filename));
-                    }
-                        
-                }*/
                 else if ((int)clientMap.get(filename).get(0) <= (int)serverMap.get(filename).get(0)) {
-                    System.err.println("Debug downloadfile!2");
+                    //System.err.println("Debug downloadfile!2");
                     downloadFromServer(filename, dir);
                     clientMap.put(filename, serverMap.get(filename));
                 }
                 
             }
-            System.err.println("Debug downloadfile!4");
+            //System.err.println("Debug downloadfile!4");
             Set<String> downloadNewFile = new HashSet<>(serverMapSet);
             downloadNewFile.removeAll(clientMapSet);
-            System.err.println("Debug downloadfile!5");
+            //System.err.println("Debug downloadfile!5");
             for (String filename : downloadNewFile) {
-                System.err.println("Debug downloadfile!2" + filename);
+                //System.err.println("Debug downloadfile!2" + filename);
                 downloadFromServer(filename, dir);
                 clientMap.put(filename, serverMap.get(filename));
-                System.err.println("hashlist: "+ serverMap.get(filename));
+                //System.err.println("hashlist: "+ serverMap.get(filename));
             }
-            System.err.println("Debug downloadfile!6");
+            //System.err.println("Debug downloadfile!6");
         } catch (Exception e) {
             System.err.println("Error: Update error" + e);
         }
@@ -249,37 +240,37 @@ public class FileHandler {
     private void downloadFromServer(String filename, File dir) {
         try {
             File file = new File(dir.getAbsolutePath() + "/" + filename);
-            System.err.println("Debug downloadfile!download fcn0" + file);
+            //System.err.println("Debug downloadfile!download fcn0" + file);
             Vector<String> hashlist = (Vector<String>) serverMap.get(filename).get(1);
-            System.err.println("Debug downloadfile!download fcn1" + hashlist);
+            //System.err.println("Debug downloadfile!download fcn1" + hashlist);
 
             if (((String) hashlist.get(0)).equals("0")) {
                 if (file.exists())
                     file.delete();
                 return;
             }
-            System.err.println("Debug downloadfile!download fcn3delte");
+            //System.err.println("Debug downloadfile!download fcn3delte");
             if (!file.exists())
                 file.createNewFile();
-            System.err.println("Debug downloadfile!download fcn2 create");
+            //System.err.println("Debug downloadfile!download fcn2 create");
             Vector params = new Vector<>();
-            FileWriter myWriter = new FileWriter(dir.getAbsolutePath() + "/" + filename);
+            //FileWriter myWriter = new FileWriter(dir.getAbsolutePath() + "/" + filename);
             FileOutputStream out = new FileOutputStream(file);
             for (String hashval : hashlist) {
                 params.clear();
                 params.add(hashval);
-                System.err.println("Debug downloadfile!download hashKey: " + hashval);
+                //System.err.println("Debug downloadfile!download hashKey: " + hashval);
                 byte[] writeIn = (byte[]) client.execute("surfstore.getblock", params);
-                MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                System.err.println("Debug downloadfile!download fcninside" + Base64.getEncoder().encodeToString(digest.digest(writeIn)));
+                //MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                //System.err.println("Debug downloadfile!download fcninside" + Base64.getEncoder().encodeToString(digest.digest(writeIn)));
 
-                System.err.println(writeIn);
-                String testing = Base64.getEncoder().encodeToString(digest.digest(writeIn));
+                //System.err.println(writeIn);
+                //String testing = Base64.getEncoder().encodeToString(digest.digest(writeIn));
                 out.write(writeIn);
                 //myWriter.write(testing);
             }
-            myWriter.close();
-            System.err.println("Debug downloadfile!download fcn4 hash");
+            //myWriter.close();
+            //System.err.println("Debug downloadfile!download fcn4 hash");
             out.close();
         } catch (FileNotFoundException e) {
             System.err.println("Error: file not found");

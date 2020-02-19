@@ -40,7 +40,7 @@ public class Server {
 		}
 		String hashVal = getHashVal(blockData);
 		blockMap.put(hashVal, blockData);
-		System.err.println("hashcode: " + hashVal + "block data is: " + blockData);
+		//System.err.println("hashcode: " + hashVal + "block data is: " + blockData);
 
 		return true;
 	}
@@ -65,9 +65,10 @@ public class Server {
 	}
 
 	// Determine which of the provided blocks are on this server
-	public Set<String> hasblocks(Vector hashlist) {
+	// I DO NOT USE IT...
+	public Vector hasblocks(Vector hashlist) {
 		System.out.println("HasBlocks()");
-		Set<String> hashOut = new HashSet<>(hashlist);
+		Vector hashOut = hashlist;
 		hashOut.retainAll(blockMap.keySet());
 		return hashOut;
 	}
