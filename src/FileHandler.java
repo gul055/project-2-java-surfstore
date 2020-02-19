@@ -278,8 +278,6 @@ public class FileHandler {
             e.printStackTrace();
         } catch (XmlRpcException e) {
             System.err.println("Error: Download failed");
-        } catch (NoSuchAlgorithmException e) {
-            System.err.println(e);
         }
     }
 
