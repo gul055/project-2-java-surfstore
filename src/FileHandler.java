@@ -188,10 +188,6 @@ public class FileHandler {
                         downloadFromServer(filename, dir);
                         clientMap.put(filename, serverMap.get(filename));
                     }
-                    else {
-                        System.err.println("Error: version conflict! current version number is: " + (int) result.get(1) );
-                    }
-
                 }
                 /*else if (Integer.parseInt((String)clientMap.get(filename).get(0)) == Integer.parseInt((String)serverMap.get(filename).get(0))) {
                     Vector<String> chashlist = (Vector<String>) clientMap.get(filename).get(1);
@@ -253,6 +249,7 @@ public class FileHandler {
             if (((String) hashlist.get(0)).equals("0")) {
                 if (file.exists())
                     file.delete();
+                return;
             }
             System.err.println("Debug downloadfile!download fcn3delte");
             if (!file.exists())
@@ -261,9 +258,11 @@ public class FileHandler {
             Vector params = new Vector<>();
             FileOutputStream out = new FileOutputStream(file);
             for (String hashval : hashlist) {
+                params.clear();
                 params.add(hashval);
                 System.err.println("Debug downloadfile!download fcninside");
                 byte[] writeIn = (byte[]) client.execute("surfstore.getblock", params);
+                System.err.println("Debug downloadfile!download fcninside" + writeIn);
                 out.write(writeIn);
             }
             System.err.println("Debug downloadfile!download fcn4 hash");
@@ -293,7 +292,7 @@ public class FileHandler {
                 System.arraycopy(bSize, 0, read, 0, readSize);
                 
                 params = new Vector<>();
-                params.add(bSize);
+                params.add(read);
                 //System.err.println("I did not upload anything loop");
                 if (!(boolean) client.execute("surfstore.putblock", params)) {
                     System.err.println("Error: upload failed");
